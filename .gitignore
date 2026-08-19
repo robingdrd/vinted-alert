@@ -1,0 +1,6 @@
+.env
+price_history.json
+seen_items.json
+__pycache__/
+*.pyc
+.venv/

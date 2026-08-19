@@ -1,0 +1,157 @@
+# Liste de recherches. Chaque recherche : query texte, prix max, catégories
+# Vinted (catalog_ids) à whitelister, et un seuil de score minimum (0-100)
+# en dessous duquel l'article n'est pas notifié.
+#
+# Whitelists Vinted FR (héritage parent → enfants confirmé) :
+#   MIXTE = [4, 16, 19, 1187, 2050, 1231, 82]
+#     Vêtements F + Chaussures F + Sacs F + Accessoires F
+#     + Vêtements H + Chaussures H + Accessoires H (inclut Sacs H)
+#   FEMME = [4, 16, 19, 1187]
+#   CHAUSSURES_UNISEX = [16, 1231]
+#   SACS À MAIN uniquement = [156]
+
+searches:
+  - name: patagonia
+    query: patagonia
+    price_max: 50
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187, 2050, 1231, 82]
+
+  - name: salomon_chaussures
+    query: salomon
+    price_max: 60
+    catalog_ids: [16, 1231]
+    min_score: 70
+
+  - name: ralph_lauren_polo
+    query: ralph lauren polo
+    price_max: 15
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187, 2050, 1231, 82]
+
+  - name: lululemon
+    query: lululemon
+    price_max: 30
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: cavalli_y2k
+    query: cavalli
+    price_max: 40
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187, 2050, 1231, 82]
+
+  - name: streetwear_workwear
+    query: carhartt
+    price_max: 55
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187, 2050, 1231, 82]
+
+  - name: sandro
+    query: sandro
+    price_max: 90
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: maje
+    query: maje
+    price_max: 90
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: zadig
+    query: zadig voltaire
+    price_max: 90
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187, 2983]
+
+  - name: kooples
+    query: the kooples
+    price_max: 90
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: iro
+    query: iro
+    price_max: 90
+    min_score: 72
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: claudie_pierlot
+    query: claudie pierlot
+    price_max: 70
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: bash
+    query: ba&sh
+    price_max: 80
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  - name: sezane
+    query: sezane
+    price_max: 60
+    min_score: 70
+    catalog_ids: [4, 16, 19, 1187]
+
+  # Sacs à main — catalog_ids [156] = sacs à main uniquement
+  - name: sacs_fendi
+    query: fendi
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_prada
+    query: prada
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_miu_miu
+    query: miu miu
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_bottega
+    query: bottega veneta
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_loewe
+    query: loewe
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_chloe
+    query: chloe
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_saint_laurent
+    query: saint laurent
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_celine
+    query: celine
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_balenciaga
+    query: balenciaga
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]
+
+  - name: sacs_jacquemus
+    query: jacquemus
+    price_max: 150
+    min_score: 70
+    catalog_ids: [156]

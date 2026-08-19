@@ -1,0 +1,37 @@
+name: Vinted Alert
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-listings:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restaurer le cache de l'état (prix vus + items déjà notifiés)
+        uses: actions/cache@v4
+        with:
+          path: |
+            price_history.json
+            seen_items.json
+          key: vinted-state-${{ github.run_id }}
+          restore-keys: vinted-state-
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Vérifier les nouvelles annonces
+        env:
+          EMAIL_DESTINATAIRE: ${{ secrets.EMAIL_DESTINATAIRE }}
+          EMAIL_EXPEDITEUR: ${{ secrets.EMAIL_EXPEDITEUR }}
+          EMAIL_MOT_DE_PASSE: ${{ secrets.EMAIL_MOT_DE_PASSE }}
+        run: python main.py
