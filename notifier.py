@@ -1,7 +1,10 @@
-"""Email notifier — one digest per run, sent via Gmail SMTP.
+"""Email + ntfy notifier — one digest per run.
 
-Reads EMAIL_EXPEDITEUR / EMAIL_MOT_DE_PASSE / EMAIL_DESTINATAIRE from the
-environment. Same SMTP pattern as ~/doctolib-alert/doctolib_alert.py.
+Email: reads EMAIL_EXPEDITEUR / EMAIL_MOT_DE_PASSE / EMAIL_DESTINATAIRE from
+the environment, sent via Gmail SMTP.
+ntfy: posts to the public ntfy.sh broker, no auth needed — anyone who knows
+the topic name can subscribe (Android app) or publish. No secret involved.
+Same dual-channel pattern as ~/doctolib-alert/doctolib_alert.py.
 """
 
 from __future__ import annotations
@@ -13,7 +16,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import requests
+
 logger = logging.getLogger(__name__)
+
+NTFY_TOPIC = "Alerte_Fringues"
 
 
 def _format_price(price, currency) -> str:
@@ -92,3 +99,33 @@ def send_email(html_body: str, count: int) -> None:
         smtp.login(sender, password)
         smtp.sendmail(sender, recipient, msg.as_string())
     logger.info("Email envoyé (%d article(s))", count)
+
+
+def _ntfy_body(items: list[dict]) -> str:
+    lines = []
+    for it in items:
+        title = it.get("title") or "(sans titre)"
+        price_str = _format_price(it.get("price"), it.get("currency"))
+        lines.append(f"{title} — {price_str}\n{it.get('url') or ''}")
+    return "\n\n".join(lines)
+
+
+def send_ntfy(items: list[dict]) -> None:
+    count = len(items)
+    data = _ntfy_body(items)
+    click_url = items[0].get("url") if len(items) == 1 else None
+    headers = {
+        "Title": f"Vinted Alert — {count} nouvelle(s) affaire(s)".encode("utf-8"),
+        "Priority": "urgent",
+        "Tags": "shopping_bags",
+    }
+    if click_url:
+        headers["Click"] = click_url.encode("utf-8")
+    resp = requests.post(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data=data.encode("utf-8"),
+        headers=headers,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    logger.info("Notification ntfy envoyée (%d article(s))", count)

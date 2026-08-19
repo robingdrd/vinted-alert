@@ -144,15 +144,28 @@ def main() -> int:
     storage.save_seen_items(SEEN_ITEMS_PATH, seen_ids_list)
 
     if digest_items:
-        html_body = notifier.build_digest_html(digest_items)
+        email_ok = ntfy_ok = False
         try:
-            notifier.send_email(html_body, len(digest_items))
+            notifier.send_email(notifier.build_digest_html(digest_items), len(digest_items))
+            email_ok = True
         except Exception:
             log.exception("Échec envoi email")
+        try:
+            notifier.send_ntfy(digest_items)
+            ntfy_ok = True
+        except Exception:
+            log.exception("Échec envoi ntfy")
+
+        if not (email_ok or ntfy_ok):
             return 1
-        log.info("🔔 Digest envoyé : %d article(s)", len(digest_items))
+        log.info(
+            "🔔 Digest : %d article(s) — email=%s ntfy=%s",
+            len(digest_items),
+            "OK" if email_ok else "KO",
+            "OK" if ntfy_ok else "KO",
+        )
     else:
-        log.info("Aucun nouvel article qualifié ce cycle — pas d'email")
+        log.info("Aucun nouvel article qualifié ce cycle — pas de notif")
 
     return 0
 
