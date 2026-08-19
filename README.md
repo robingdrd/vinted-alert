@@ -1,13 +1,16 @@
 # vinted-alert
 
 Bot de veille Vinted simplifié : scanne des recherches configurées dans
-`config.yaml`, score chaque nouvelle annonce (prix vs médiane historique +
-mots-clés du titre type "vide dressing", "jamais porté"...), et envoie un
-email récapitulatif dès qu'au moins un article dépasse le score minimum de
-sa recherche.
+`config.yaml`, et envoie un email récapitulatif dès qu'un nouvel article
+apparaît au prix (`price_max`) ou en dessous, pour une recherche donnée.
 
-Pas d'IA, pas de conseils de revente, pas de Telegram — juste scraping +
-scoring + email. L'historique de prix et la liste des articles déjà vus
+Pas d'IA, pas de conseils de revente, pas de Telegram, pas (encore) de
+scoring qualité — juste scraping + filtre prix + email. `scorer.py` reste
+dans le repo, prêt à être réactivé plus tard pour un score de qualité basé
+sur l'historique de prix (déjà collecté en tâche de fond dans
+`price_history.json`) et les mots-clés du titre.
+
+L'historique de prix et la liste des articles déjà vus
 sont stockés dans deux fichiers JSON (`price_history.json`,
 `seen_items.json`), persistés entre les runs GitHub Actions via
 `actions/cache`.

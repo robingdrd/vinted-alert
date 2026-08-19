@@ -29,11 +29,8 @@ def _item_card_html(item: dict) -> str:
     title = html.escape(item.get("title") or "(sans titre)")
     brand = html.escape(item.get("brand") or "?")
     price_str = _format_price(item.get("price"), item.get("currency"))
-    score = int(item.get("score") or 0)
     url = item.get("url") or "#"
     photo_url = item.get("photo_url")
-    reasons = item.get("reasons") or []
-    reasons_html = "".join(f"<li>{html.escape(r)}</li>" for r in reasons)
     seller = item.get("seller_login")
     seller_html = f" · vendeur {html.escape(seller)}" if seller else ""
 
@@ -49,10 +46,9 @@ def _item_card_html(item: dict) -> str:
         {img_html}
         <div style="font-size:17px;font-weight:bold;color:#2d3748;">{title}</div>
         <div style="color:#718096;font-size:14px;margin:2px 0 6px;">{brand}{seller_html}</div>
-        <div style="font-size:16px;color:#2b6cb0;font-weight:bold;">{price_str} · score {score}</div>
-        <ul style="margin:6px 0 10px 16px;padding:0;color:#4a5568;font-size:13px;">{reasons_html}</ul>
+        <div style="font-size:16px;color:#2b6cb0;font-weight:bold;">{price_str}</div>
         <a href="{html.escape(url)}" style="display:inline-block;background:#107ACA;color:white;
-           padding:10px 20px;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
+           padding:10px 20px;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;margin-top:8px;">
            Voir sur Vinted
         </a>
     </td></tr>"""

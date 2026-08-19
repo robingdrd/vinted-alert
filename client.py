@@ -131,6 +131,55 @@ class VintedClient:
             raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
         return items
 
+    def get_item_attributes(self, item_id: int) -> Optional[dict[str, str]]:
+        """Scrape /items/{id} and return its "Détails" attribute panel
+        (brand, size, status, material, color...) as a flat {code: value}
+        dict, e.g. {"color": "Marron, Noir", "material": "Cuir"}.
+
+        This is a best-effort enrichment call, only meant to be used on a
+        small number of already-filtered candidates (price/brand/size),
+        not on every search result — one extra HTTP request per item.
+        Returns None on any failure (item removed, page structure changed,
+        network error) — callers must treat a missing attribute as "unknown",
+        never as a hard filter failure.
+        """
+        import json as _json
+        import re as _re
+
+        url = f"{BASE_URL}/items/{item_id}"
+        try:
+            self._respect_rate_limit()
+            response = self.session.get(url, headers=self._html_headers(), timeout=DEFAULT_TIMEOUT_S)
+            self._last_request_at = time.time()
+            response.raise_for_status()
+        except Exception as exc:
+            logger.warning("get_item_attributes(%s) requête échouée : %s", item_id, exc)
+            return None
+
+        html = response.text
+        pattern = _re.compile(
+            r'\\"attributes\\":\[(.*?)\],\\"item_id\\":\s*'
+            + _re.escape(str(item_id))
+            + r',\\"section_title\\":\\"D.tails\\"',
+            _re.DOTALL,
+        )
+        match = pattern.search(html)
+        if not match:
+            logger.warning("get_item_attributes(%s) : bloc attributs introuvable", item_id)
+            return None
+
+        attrs: dict[str, str] = {}
+        entry_pattern = _re.compile(
+            r'\\"code\\":\\"([a-z_]+)\\",\\"data\\":\{\\"title\\":\\"[^"]*?\\",\\"value\\":\\"(.*?)\\"'
+        )
+        for code, raw_value in entry_pattern.findall(match.group(1)):
+            try:
+                value = _json.loads('"' + raw_value + '"')
+            except (_json.JSONDecodeError, ValueError):
+                value = raw_value
+            attrs[code] = value
+        return attrs or None
+
     def _get_json(self, url: str, params: Optional[dict] = None) -> dict[str, Any]:
         if not self._session_ready:
             self._warm_up()
