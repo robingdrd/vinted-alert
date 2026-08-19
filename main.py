@@ -92,6 +92,7 @@ def main() -> int:
             "query": search["query"],
             "price_max": search.get("price_max"),
             "catalog_ids": search.get("catalog_ids"),
+            "brand_ids": search.get("brand_ids"),
         }
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
 

@@ -1,21 +1,35 @@
 # Liste de recherches. Chaque recherche : query texte (passé à la recherche
 # Vinted), et des filtres appliqués ensuite sur les résultats :
-#   price_max : prix max déclencheur (obligatoire, aussi utilisé comme
-#               plafond de la recherche Vinted elle-même)
-#   brand     : nom de marque exact (comparaison insensible à la casse)
-#   sizes     : liste de tailles exactes telles qu'affichées par Vinted
-#               (ex: "43,5", "38", "M") — aucun filtre si omis
-#   colors    : liste de couleurs (sous-chaîne, insensible à la casse,
-#               matchée contre le champ Couleur de la fiche article —
-#               coûte une requête HTTP supplémentaire par article candidat,
-#               uniquement appliqué aux articles qui passent déjà
-#               price_max/brand/sizes) — aucun filtre si omis
+#   price_max   : prix max déclencheur (obligatoire, aussi utilisé comme
+#                 plafond de la recherche Vinted elle-même)
+#   brand_ids   : identifiant(s) numérique(s) Vinted de la marque — filtre
+#                 SERVEUR (fiable et complet, contrairement au texte seul).
+#                 Pour trouver l'ID d'une marque : ouvre une fiche article
+#                 de cette marque sur vinted.fr, l'ID est dans l'URL
+#                 /brand/<ID>-<nom> (lien "Marque" de la fiche).
+#   brand      : nom de marque exact, vérif client-side de sécurité en plus
+#                de brand_ids (comparaison insensible à la casse, optionnel)
+#   sizes       : liste de tailles exactes telles qu'affichées par Vinted
+#                 (ex: "43,5", "38", "M") — filtre client-side, aucun filtre
+#                 si omis (les IDs de taille Vinted ne sont pas fiables en
+#                 filtre serveur, testé et abandonné)
+#   colors      : liste de couleurs (sous-chaîne, insensible à la casse,
+#                 matchée contre le champ Couleur de la fiche article —
+#                 coûte une requête HTTP supplémentaire par article
+#                 candidat, uniquement appliqué aux articles qui passent
+#                 déjà price_max/brand/sizes) — aucun filtre si omis
 #   catalog_ids : catégories Vinted à restreindre (optionnel)
+#
+# Important : sans brand_ids, la recherche ne pagine que sur les articles
+# les plus récents (max_pages=5 côté client.py) et peut rater des annonces
+# plus anciennes noyées dans un grand volume de résultats. brand_ids réduit
+# drastiquement ce volume et rend la recherche exhaustive dans la pratique.
 
 searches:
   - name: sebago_classic_dan
-    query: sebago classic dan
+    query: classic dan
     price_max: 200
+    brand_ids: [20413]  # Sebago
     brand: Sebago
     sizes: ["43,5"]
     colors: ["noir"]

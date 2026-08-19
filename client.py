@@ -107,10 +107,21 @@ class VintedClient:
         price_max: Optional[float] = None,
         sizes: Optional[list[int]] = None,
         catalog_ids: Optional[list[int]] = None,
+        brand_ids: Optional[list[int]] = None,
         per_page: int = 96,
         order: str = "newest_first",
         page: Optional[int] = None,
+        max_pages: int = 5,
     ) -> list[dict[str, Any]]:
+        """Search Vinted, following pagination up to `max_pages` (96/page).
+
+        Without a narrow enough filter (brand_ids/catalog_ids), Vinted's
+        `newest_first` order means older-but-still-relevant listings can sit
+        many pages deep — a single page is not enough for searches meant to
+        find *all* matching items, not just the freshest ones. `max_pages`
+        bounds the worst case (a very broad, unfiltered query) at
+        max_pages * per_page items fetched.
+        """
         params: dict[str, Any] = {
             "search_text": query,
             "per_page": per_page,
@@ -122,14 +133,34 @@ class VintedClient:
             params["size_ids"] = ",".join(str(s) for s in sizes)
         if catalog_ids:
             params["catalog_ids"] = ",".join(str(c) for c in catalog_ids)
+        if brand_ids:
+            params["brand_ids"] = ",".join(str(b) for b in brand_ids)
+
         if page is not None:
             params["page"] = page
+            payload = self._get_json(SEARCH_ENDPOINT, params)
+            items = payload.get("items", [])
+            if not isinstance(items, list):
+                raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
+            return items
 
-        payload = self._get_json(SEARCH_ENDPOINT, params)
-        items = payload.get("items", [])
-        if not isinstance(items, list):
-            raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
-        return items
+        all_items: list[dict[str, Any]] = []
+        current_page = 1
+        while current_page <= max_pages:
+            page_params = dict(params, page=current_page)
+            payload = self._get_json(SEARCH_ENDPOINT, page_params)
+            items = payload.get("items", [])
+            if not isinstance(items, list):
+                raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
+            all_items.extend(items)
+
+            pagination = payload.get("pagination") or {}
+            total_pages = pagination.get("total_pages", 1)
+            if not items or current_page >= total_pages:
+                break
+            current_page += 1
+
+        return all_items
 
     def get_item_attributes(self, item_id: int) -> Optional[dict[str, str]]:
         """Scrape /items/{id} and return its "Détails" attribute panel
