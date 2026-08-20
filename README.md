@@ -1,19 +1,44 @@
 # vinted-alert
 
-Bot de veille Vinted simplifié : scanne des recherches configurées dans
-`config.yaml`, et envoie un email récapitulatif dès qu'un nouvel article
-apparaît au prix (`price_max`) ou en dessous, pour une recherche donnée.
+Bot de veille Vinted : chaque alerte est une **URL de recherche vinted.fr**.
+Tous les filtres de l'URL (marque, taille, couleur, prix, état, matière...)
+sont appliqués par Vinted côté serveur — ce que tu vois sur le site est
+exactement ce que le bot surveille. Dès qu'un article jamais vu apparaît,
+tu reçois un email récapitulatif + une notification push Android (ntfy).
 
 Pas d'IA, pas de conseils de revente, pas de Telegram, pas (encore) de
-scoring qualité — juste scraping + filtre prix + email. `scorer.py` reste
-dans le repo, prêt à être réactivé plus tard pour un score de qualité basé
-sur l'historique de prix (déjà collecté en tâche de fond dans
-`price_history.json`) et les mots-clés du titre.
+scoring qualité. `scorer.py` reste dans le repo, prêt à être réactivé plus
+tard pour un score de qualité basé sur l'historique de prix (déjà collecté
+en tâche de fond dans `price_history.json`) et les mots-clés du titre.
 
 L'historique de prix et la liste des articles déjà vus
 sont stockés dans deux fichiers JSON (`price_history.json`,
 `seen_items.json`), persistés entre les runs GitHub Actions via
 `actions/cache`.
+
+## Ajouter une alerte
+
+1. Va sur **vinted.fr**, fais ta recherche et pose tes filtres normalement
+   (marque, taille, couleur, prix...).
+2. Copie l'URL de la barre d'adresse.
+3. Lance :
+
+```bash
+python add_alert.py "<url collée>" --name mon_alerte --push
+```
+
+Le script affiche d'abord les articles qui correspondent **actuellement**,
+pour que tu vérifies le filtre avant d'enregistrer. `--push` fait le
+commit + push (sans lui, pense à le faire pour activer l'alerte sur
+GitHub Actions). Pour supprimer une alerte : efface son bloc de 2 lignes
+dans `config.yaml`, puis pousse.
+
+💡 Filtre toujours par **marque** dans l'UI Vinted quand c'est pertinent :
+la recherche par texte seul est floue (« clarks desert boot » remonte
+aussi des chaussures d'autres marques).
+
+⚠️ Le dédoublonnage est global : un article déjà notifié via une alerte ne
+sera pas renotifié par une autre.
 
 ## Utilisation locale
 
@@ -23,9 +48,6 @@ pip install -r requirements.txt
 cp .env.example .env   # renseigner EMAIL_EXPEDITEUR / EMAIL_MOT_DE_PASSE / EMAIL_DESTINATAIRE
 python main.py
 ```
-
-Édite `config.yaml` pour ajouter/retirer des recherches (marque, prix max,
-catégories Vinted, seuil de score).
 
 ## Déploiement (GitHub Actions + cron-job.org)
 

@@ -103,113 +103,43 @@ class VintedClient:
 
     def search(
         self,
-        query: str,
-        price_max: Optional[float] = None,
-        sizes: Optional[list[int]] = None,
-        catalog_ids: Optional[list[int]] = None,
-        brand_ids: Optional[list[int]] = None,
+        params: dict[str, Any],
         per_page: int = 96,
-        order: str = "newest_first",
-        page: Optional[int] = None,
         max_pages: int = 5,
     ) -> list[dict[str, Any]]:
-        """Search Vinted, following pagination up to `max_pages` (96/page).
+        """Search Vinted with ready-made API params, following pagination.
 
-        Without a narrow enough filter (brand_ids/catalog_ids), Vinted's
-        `newest_first` order means older-but-still-relevant listings can sit
-        many pages deep — a single page is not enough for searches meant to
-        find *all* matching items, not just the freshest ones. `max_pages`
-        bounds the worst case (a very broad, unfiltered query) at
-        max_pages * per_page items fetched.
+        `params` comes straight from `vinted_url.parse_vinted_url()` — every
+        filter (brand/size/color/price/condition...) is applied server-side,
+        so every returned item is a match and no client-side filtering is
+        needed.
+
+        Vinted's `newest_first` order means older-but-still-matching listings
+        can sit several pages deep, so a single page is not enough for a
+        search meant to find *all* matches. `max_pages` bounds the worst case
+        (a very broad filter) at max_pages * per_page items fetched.
         """
-        params: dict[str, Any] = {
-            "search_text": query,
+        base_params: dict[str, Any] = {
             "per_page": per_page,
-            "order": order,
+            "order": "newest_first",
+            **params,
         }
-        if price_max is not None:
-            params["price_to"] = price_max
-        if sizes:
-            params["size_ids"] = ",".join(str(s) for s in sizes)
-        if catalog_ids:
-            params["catalog_ids"] = ",".join(str(c) for c in catalog_ids)
-        if brand_ids:
-            params["brand_ids"] = ",".join(str(b) for b in brand_ids)
-
-        if page is not None:
-            params["page"] = page
-            payload = self._get_json(SEARCH_ENDPOINT, params)
-            items = payload.get("items", [])
-            if not isinstance(items, list):
-                raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
-            return items
 
         all_items: list[dict[str, Any]] = []
         current_page = 1
         while current_page <= max_pages:
-            page_params = dict(params, page=current_page)
-            payload = self._get_json(SEARCH_ENDPOINT, page_params)
+            payload = self._get_json(SEARCH_ENDPOINT, dict(base_params, page=current_page))
             items = payload.get("items", [])
             if not isinstance(items, list):
                 raise RuntimeError("Réponse Vinted inattendue : 'items' n'est pas une liste")
             all_items.extend(items)
-
-            pagination = payload.get("pagination") or {}
-            total_pages = pagination.get("total_pages", 1)
-            if not items or current_page >= total_pages:
+            # `pagination.total_entries` is unreliable (capped, and ignores
+            # some filters), so stop on a short/empty page instead.
+            if len(items) < per_page:
                 break
             current_page += 1
 
         return all_items
-
-    def get_item_attributes(self, item_id: int) -> Optional[dict[str, str]]:
-        """Scrape /items/{id} and return its "Détails" attribute panel
-        (brand, size, status, material, color...) as a flat {code: value}
-        dict, e.g. {"color": "Marron, Noir", "material": "Cuir"}.
-
-        This is a best-effort enrichment call, only meant to be used on a
-        small number of already-filtered candidates (price/brand/size),
-        not on every search result — one extra HTTP request per item.
-        Returns None on any failure (item removed, page structure changed,
-        network error) — callers must treat a missing attribute as "unknown",
-        never as a hard filter failure.
-        """
-        import json as _json
-        import re as _re
-
-        url = f"{BASE_URL}/items/{item_id}"
-        try:
-            self._respect_rate_limit()
-            response = self.session.get(url, headers=self._html_headers(), timeout=DEFAULT_TIMEOUT_S)
-            self._last_request_at = time.time()
-            response.raise_for_status()
-        except Exception as exc:
-            logger.warning("get_item_attributes(%s) requête échouée : %s", item_id, exc)
-            return None
-
-        html = response.text
-        pattern = _re.compile(
-            r'\\"attributes\\":\[(.*?)\],\\"item_id\\":\s*'
-            + _re.escape(str(item_id))
-            + r',\\"section_title\\":\\"D.tails\\"',
-            _re.DOTALL,
-        )
-        match = pattern.search(html)
-        if not match:
-            logger.warning("get_item_attributes(%s) : bloc attributs introuvable", item_id)
-            return None
-
-        attrs: dict[str, str] = {}
-        entry_pattern = _re.compile(
-            r'\\"code\\":\\"([a-z_]+)\\",\\"data\\":\{\\"title\\":\\"[^"]*?\\",\\"value\\":\\"(.*?)\\"'
-        )
-        for code, raw_value in entry_pattern.findall(match.group(1)):
-            try:
-                value = _json.loads('"' + raw_value + '"')
-            except (_json.JSONDecodeError, ValueError):
-                value = raw_value
-            attrs[code] = value
-        return attrs or None
 
     def _get_json(self, url: str, params: Optional[dict] = None) -> dict[str, Any]:
         if not self._session_ready:
