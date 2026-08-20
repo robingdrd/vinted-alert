@@ -34,4 +34,5 @@ jobs:
           EMAIL_DESTINATAIRE: ${{ secrets.EMAIL_DESTINATAIRE }}
           EMAIL_EXPEDITEUR: ${{ secrets.EMAIL_EXPEDITEUR }}
           EMAIL_MOT_DE_PASSE: ${{ secrets.EMAIL_MOT_DE_PASSE }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python main.py

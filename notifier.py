@@ -2,8 +2,10 @@
 
 Email: reads EMAIL_EXPEDITEUR / EMAIL_MOT_DE_PASSE / EMAIL_DESTINATAIRE from
 the environment, sent via Gmail SMTP.
-ntfy: posts to the public ntfy.sh broker, no auth needed — anyone who knows
-the topic name can subscribe (Android app) or publish. No secret involved.
+ntfy: posts to the public ntfy.sh broker, topic read from NTFY_TOPIC. The
+broker has no auth — knowing the topic name is enough to subscribe *or*
+publish to it, so the topic must stay out of this (public) repo and live in
+the environment / GitHub Secrets like any other credential.
 Same dual-channel pattern as ~/doctolib-alert/doctolib_alert.py.
 """
 
@@ -19,8 +21,6 @@ from email.mime.text import MIMEText
 import requests
 
 logger = logging.getLogger(__name__)
-
-NTFY_TOPIC = "Alerte_Fringues"
 
 
 def _format_price(price, currency) -> str:
@@ -111,6 +111,12 @@ def _ntfy_body(items: list[dict]) -> str:
 
 
 def send_ntfy(items: list[dict]) -> None:
+    topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if not topic:
+        raise ValueError(
+            "NTFY_TOPIC absent de l'environnement — impossible d'envoyer la "
+            "notification push (voir .env.example)."
+        )
     count = len(items)
     data = _ntfy_body(items)
     click_url = items[0].get("url") if len(items) == 1 else None
@@ -122,7 +128,7 @@ def send_ntfy(items: list[dict]) -> None:
     if click_url:
         headers["Click"] = click_url.encode("utf-8")
     resp = requests.post(
-        f"https://ntfy.sh/{NTFY_TOPIC}",
+        f"https://ntfy.sh/{topic}",
         data=data.encode("utf-8"),
         headers=headers,
         timeout=10,
