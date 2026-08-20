@@ -16,22 +16,38 @@ sont stockés dans deux fichiers JSON (`price_history.json`,
 `seen_items.json`), persistés entre les runs GitHub Actions via
 `actions/cache`.
 
-## Ajouter une alerte
+## Ajouter une alerte (depuis le navigateur)
 
-1. Va sur **vinted.fr**, fais ta recherche et pose tes filtres normalement
-   (marque, taille, couleur, prix...).
-2. Copie l'URL de la barre d'adresse.
-3. Lance :
+**Installation du raccourci, une seule fois :** crée un favori dans ta
+barre de favoris et mets ceci comme *adresse* (à la place d'une URL) :
+
+```
+javascript:(function(){var u=location.href;if(u.indexOf('vinted.')<0){alert('Ouvre une recherche vinted.fr avant de cliquer');return;}var n=prompt('Nom de cette alerte ?','');if(n===null)return;window.open('https://github.com/robingdrd/vinted-alert/issues/new?title='+encodeURIComponent('Alerte: '+n)+'&body='+encodeURIComponent(u),'_blank');})();
+```
+
+**Ensuite, pour chaque nouvelle alerte :**
+
+1. sur **vinted.fr**, fais ta recherche et pose tes filtres (marque,
+   taille, couleur, prix... — tout est supporté) ;
+2. clique sur le favori, donne un nom à l'alerte ;
+3. une issue GitHub pré-remplie s'ouvre → clique **Submit new issue**.
+
+Une minute plus tard, l'alerte est ajoutée et l'issue se ferme toute seule
+avec la liste des articles qui correspondent déjà — c'est ce qui permet de
+vérifier que les filtres sont les bons.
+
+### Alternative en ligne de commande
 
 ```bash
 python add_alert.py "<url collée>" --name mon_alerte --push
 ```
 
-Le script affiche d'abord les articles qui correspondent **actuellement**,
-pour que tu vérifies le filtre avant d'enregistrer. `--push` fait le
-commit + push (sans lui, pense à le faire pour activer l'alerte sur
-GitHub Actions). Pour supprimer une alerte : efface son bloc de 2 lignes
-dans `config.yaml`, puis pousse.
+### Supprimer une alerte
+
+Efface son bloc de 2 lignes dans [config.yaml](config.yaml) (l'éditeur web
+de GitHub suffit : bouton ✏️, puis *Commit changes*).
+
+### Bon à savoir
 
 💡 Filtre toujours par **marque** dans l'UI Vinted quand c'est pertinent :
 la recherche par texte seul est floue (« clarks desert boot » remonte
@@ -39,6 +55,10 @@ aussi des chaussures d'autres marques).
 
 ⚠️ Le dédoublonnage est global : un article déjà notifié via une alerte ne
 sera pas renotifié par une autre.
+
+⚠️ Une alerte trop large peut matcher des centaines d'articles, tous
+notifiés au premier cycle. L'aperçu affiché dans l'issue annonce le nombre
+à l'avance.
 
 ## Utilisation locale
 
