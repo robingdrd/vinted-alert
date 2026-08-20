@@ -27,13 +27,14 @@ CONFIG_PATH = "config.yaml"
 PREVIEW_LIMIT = 10
 
 
-def _slugify(text: str) -> str:
+def slugify(text: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "_", (text or "").lower()).strip("_")
     return slug or "alerte"
 
 
-def _suggest_name(params: dict[str, str], existing: set[str]) -> str:
-    base = _slugify(params.get("search_text", "") or "alerte")
+def unique_name(base: str, existing: set[str]) -> str:
+    """`base`, or `base_2`, `base_3`... if already taken."""
+    base = slugify(base)
     if base not in existing:
         return base
     n = 2
@@ -42,8 +43,23 @@ def _suggest_name(params: dict[str, str], existing: set[str]) -> str:
     return f"{base}_{n}"
 
 
-def _existing_names(config: dict) -> set[str]:
+def existing_names(config_path: str = CONFIG_PATH) -> set[str]:
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f) or {}
     return {s.get("name") for s in (config.get("searches") or []) if s.get("name")}
+
+
+def append_alert(name: str, url: str, config_path: str = CONFIG_PATH) -> None:
+    """Append one alert to config.yaml as raw text.
+
+    Appending text rather than re-dumping the parsed YAML keeps the file's
+    explanatory comments (and their formatting) intact.
+    """
+    with open(config_path, "r", encoding="utf-8") as f:
+        raw = f.read()
+    entry = f'  - name: {name}\n    url: "{url.strip()}"\n'
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(raw.rstrip("\n") + "\n" + entry)
 
 
 def _format_price(fields: dict) -> str:
@@ -69,12 +85,9 @@ def main(argv=None) -> int:
         print(f"❌ {exc}", file=sys.stderr)
         return 2
 
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        raw_config = f.read()
-    config = yaml.safe_load(raw_config) or {}
-    existing = _existing_names(config)
+    existing = existing_names()
 
-    name = args.name or _suggest_name(params, existing)
+    name = args.name or unique_name(params.get("search_text", "") or "alerte", existing)
     if name in existing:
         print(
             f"❌ Une alerte nommée '{name}' existe déjà. Choisis un autre nom "
@@ -119,9 +132,7 @@ def main(argv=None) -> int:
             print("Annulé, config.yaml inchangé.")
             return 0
 
-    entry = f'  - name: {name}\n    url: "{args.url.strip()}"\n'
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        f.write(raw_config.rstrip("\n") + "\n" + entry)
+    append_alert(name, args.url)
     print(f"✅ Alerte '{name}' ajoutée à {CONFIG_PATH}")
 
     if args.push:

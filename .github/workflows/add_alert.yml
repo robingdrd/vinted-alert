@@ -1,0 +1,56 @@
+name: Ajouter une alerte
+
+# Ouvre une issue contenant l'URL d'une recherche vinted.fr → l'alerte est
+# ajoutée à config.yaml, l'issue reçoit l'aperçu des résultats puis se ferme.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  add-alert:
+    # Le repo est public : n'importe qui peut ouvrir une issue. Seul le
+    # propriétaire peut ajouter une alerte (sinon un inconnu pourrait
+    # remplir la config et déclencher des notifs).
+    if: github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Convertir l'issue en alerte
+        id: convert
+        env:
+          # Passé par l'environnement (jamais interpolé dans le shell) pour
+          # qu'aucun contenu d'issue ne puisse être exécuté.
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python issue_to_alert.py
+
+      - name: Commit + push
+        if: steps.convert.outputs.added == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add config.yaml
+          git commit -m "Ajoute une alerte (issue #${{ github.event.issue.number }})"
+          git push
+
+      - name: Répondre et fermer l'issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body-file comment.md
+          gh issue close "${{ github.event.issue.number }}"
