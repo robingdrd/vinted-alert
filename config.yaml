@@ -18,3 +18,5 @@
 searches:
   - name: sebago_classic_dan
     url: "https://www.vinted.fr/catalog?search_text=classic+dan&brand_ids[]=20413&size_ids[]=787&color_ids[]=1&price_to=200"
+  - name: hast
+    url: "https://www.vinted.fr/catalog?search_text=hast&price_to=150.00&currency=EUR&brand_ids[]=277467&size_ids[]=208&size_ids[]=209&size_ids[]=1426&size_ids[]=1438&size_ids[]=1524&size_ids[]=1531&size_ids[]=1596&size_ids[]=1638&status_ids[]=1&status_ids[]=2&status_ids[]=6&search_id=28633997365&order=newest_first"
