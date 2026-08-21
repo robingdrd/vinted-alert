@@ -101,13 +101,31 @@ def send_email(html_body: str, count: int) -> None:
     logger.info("Email envoyé (%d article(s))", count)
 
 
+# Au-delà de 4096 octets, ntfy.sh ne délivre plus le corps comme texte : il
+# le convertit en pièce jointe (attachment.txt), illisible d'un coup d'œil
+# sur le téléphone — et sans erreur HTTP pour le signaler. On garde donc la
+# notif courte : c'est le canal « préviens-moi », l'email porte le détail.
+NTFY_MAX_ITEMS = 5
+NTFY_MAX_BYTES = 3500
+
+
 def _ntfy_body(items: list[dict]) -> str:
     lines = []
-    for it in items:
+    for it in items[:NTFY_MAX_ITEMS]:
         title = it.get("title") or "(sans titre)"
         price_str = _format_price(it.get("price"), it.get("currency"))
         lines.append(f"{title} — {price_str}\n{it.get('url') or ''}")
-    return "\n\n".join(lines)
+    remaining = len(items) - NTFY_MAX_ITEMS
+    if remaining > 0:
+        lines.append(f"… et {remaining} autre(s) — voir l'email")
+
+    body = "\n\n".join(lines)
+    # Filet de sécurité : quelques titres à rallonge peuvent suffire à
+    # dépasser la limite même avec 5 articles.
+    encoded = body.encode("utf-8")
+    if len(encoded) > NTFY_MAX_BYTES:
+        body = encoded[:NTFY_MAX_BYTES].decode("utf-8", "ignore") + "\n\n[…] voir l'email"
+    return body
 
 
 def send_ntfy(items: list[dict]) -> None:
